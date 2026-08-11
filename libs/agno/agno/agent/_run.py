@@ -493,7 +493,7 @@ def _run(
                 if len(run_messages.messages) == 0:
                     log_error("No messages to be sent to the model.")
 
-                # Start memory creation in background thread
+                # 7. Start background futures (memory, learning, cultural knowledge)
                 from agno.agent import _managers
 
                 memory_future = _managers.start_memory_future(
@@ -585,16 +585,16 @@ def _run(
                         user_id=user_id,
                     )
 
-                # 8. Store media in run output for the caller
+                # 10. Store media in run output for the caller
                 store_media_util(run_response, model_response)
 
-                # 9. Convert the response to the structured format if needed
+                # 11. Convert the response to the structured format if needed
                 convert_response_to_structured_format(agent, run_response, run_context=run_context)
 
-                # 9b. Generate follow-up suggestions if enabled
+                # 11b. Generate follow-up suggestions if enabled
                 generate_followups(agent, run_response=run_response)
 
-                # 10. Execute post-hooks after output is generated but before response is returned
+                # 12. Execute post-hooks after output is generated but before response is returned
                 if agent.post_hooks is not None:
                     post_hook_iterator = execute_post_hooks(
                         agent,
@@ -612,7 +612,7 @@ def _run(
                 # Check for cancellation
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 11. Wait for background memory creation and cultural knowledge creation
+                # 13. Wait for background memory creation and cultural knowledge creation
                 wait_for_open_threads(
                     memory_future=memory_future,  # type: ignore
                     cultural_knowledge_future=cultural_knowledge_future,  # type: ignore
@@ -623,7 +623,7 @@ def _run(
                     collect_background_metrics(memory_future, cultural_knowledge_future, learning_future),
                 )
 
-                # 12. Create session summary
+                # 14. Create session summary
                 if agent.session_summary_manager is not None and agent.enable_session_summaries:
                     # Upsert the RunOutput to Agent Session before creating the session summary
                     agent_session.upsert_run(run=run_response)
@@ -636,7 +636,7 @@ def _run(
 
                 run_response.status = RunStatus.completed
 
-                # 13. Cleanup and store the run response and session
+                # 15. Cleanup and store the run response and session
                 cleanup_and_store(
                     agent, run_response=run_response, session=agent_session, run_context=run_context, user_id=user_id
                 )
@@ -1005,7 +1005,7 @@ def _run_stream(
                         raise_if_cancelled(run_response.run_id)  # type: ignore
                     yield event
 
-                # 7b. Generate follow-up suggestions if enabled
+                # 9b. Generate follow-up suggestions if enabled
                 for event in generate_followups_stream(
                     agent,  # type: ignore
                     run_response=run_response,
@@ -1067,7 +1067,7 @@ def _run_stream(
                         **kwargs,
                     )
 
-                # 8. Wait for background memory creation and cultural knowledge creation
+                # 10. Wait for background memory creation and cultural knowledge creation
                 yield from wait_for_thread_tasks_stream(
                     memory_future=memory_future,  # type: ignore
                     cultural_knowledge_future=cultural_knowledge_future,  # type: ignore
@@ -1083,7 +1083,7 @@ def _run_stream(
                     collect_background_metrics(memory_future, cultural_knowledge_future, learning_future),
                 )
 
-                # 9. Create session summary
+                # 11. Create session summary
                 if agent.session_summary_manager is not None and agent.enable_session_summaries:
                     # Upsert the RunOutput to Agent Session before creating the session summary
                     agent_session.upsert_run(run=run_response)
@@ -1127,7 +1127,7 @@ def _run_stream(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 10. Cleanup and store the run response and session
+                # 12. Cleanup and store the run response and session
                 cleanup_and_store(
                     agent, run_response=run_response, session=agent_session, run_context=run_context, user_id=user_id
                 )
@@ -1707,16 +1707,16 @@ async def _arun(
                         user_id=user_id,
                     )
 
-                # 11. Convert the response to the structured format if needed
+                # 10. Convert the response to the structured format if needed
                 convert_response_to_structured_format(agent, run_response, run_context=run_context)
 
-                # 11b. Generate follow-up suggestions if enabled
+                # 10b. Generate follow-up suggestions if enabled
                 await agenerate_followups(agent, run_response=run_response)
 
-                # 12. Store media in run output for the caller
+                # 11. Store media in run output for the caller
                 store_media_util(run_response, model_response)
 
-                # 13. Execute post-hooks (after output is generated but before response is returned)
+                # 12. Execute post-hooks (after output is generated but before response is returned)
                 if agent.post_hooks is not None:
                     async for _ in aexecute_post_hooks(
                         agent,
@@ -1734,7 +1734,7 @@ async def _arun(
                 # Check for cancellation
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 14. Wait for background memory creation
+                # 13. Wait for background memory creation
                 await await_for_open_threads(
                     memory_task=memory_task,
                     cultural_knowledge_task=cultural_knowledge_task,
@@ -1745,7 +1745,7 @@ async def _arun(
                     collect_background_metrics(memory_task, cultural_knowledge_task, learning_task),
                 )
 
-                # 15. Create session summary
+                # 14. Create session summary
                 if agent.session_summary_manager is not None and agent.enable_session_summaries:
                     # Upsert the RunOutput to Agent Session before creating the session summary
                     agent_session.upsert_run(run=run_response)
@@ -1758,7 +1758,7 @@ async def _arun(
 
                 run_response.status = RunStatus.completed
 
-                # 16. Cleanup and store the run response and session
+                # 15. Cleanup and store the run response and session
                 await acleanup_and_store(
                     agent,
                     run_response=run_response,
@@ -2454,7 +2454,7 @@ async def _arun_stream(
                 # Check for cancellation after model processing
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 10. Parse response with parser model if provided
+                # 9. Parse response with parser model if provided
                 async for event in aparse_response_with_parser_model_stream(
                     agent,
                     session=agent_session,
@@ -2466,7 +2466,7 @@ async def _arun_stream(
                         await araise_if_cancelled(run_response.run_id)  # type: ignore
                     yield event  # type: ignore
 
-                # 10b. Generate follow-up suggestions if enabled
+                # 9b. Generate follow-up suggestions if enabled
                 async for event in agenerate_followups_stream(
                     agent,
                     run_response=run_response,
@@ -2529,7 +2529,7 @@ async def _arun_stream(
                     ):
                         yield event
 
-                # 11. Wait for background memory creation
+                # 10. Wait for background memory creation
                 async for item in await_for_thread_tasks_stream(
                     memory_task=memory_task,
                     cultural_knowledge_task=cultural_knowledge_task,
@@ -2546,7 +2546,7 @@ async def _arun_stream(
                     collect_background_metrics(memory_task, cultural_knowledge_task, learning_task),
                 )
 
-                # 12. Create session summary
+                # 11. Create session summary
                 if agent.session_summary_manager is not None and agent.enable_session_summaries:
                     # Upsert the RunOutput to Agent Session before creating the session summary
                     agent_session.upsert_run(run=run_response)
@@ -2590,7 +2590,7 @@ async def _arun_stream(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 13. Cleanup and store the run response and session
+                # 12. Cleanup and store the run response and session
                 await acleanup_and_store(
                     agent,
                     run_response=run_response,
@@ -5091,16 +5091,16 @@ async def _acontinue_run_stream(
     """Continue a previous run.
 
     Steps:
-    1. Resolve dependencies
-    2. Read existing session from db
-    3. Update session state and metadata
+    1. Read existing session from db
+    2. Update session state and metadata
+    3. Resolve dependencies
     4. Prepare run response
     5. Determine tools for model
     6. Prepare run messages
     7. Handle the updated tools
     8. Process model response
-    9. Create session summary
-    10. Execute post-hooks
+    9. Execute post-hooks
+    10. Create session summary
     11. Cleanup and store the run response and session
     """
     from agno.agent._hooks import aexecute_post_hooks
@@ -5428,7 +5428,7 @@ async def _acontinue_run_stream(
                         yield item
                     return
 
-                # 8. Execute post-hooks
+                # 9. Execute post-hooks
                 if agent.post_hooks is not None:
                     async for event in aexecute_post_hooks(
                         agent,
@@ -5447,7 +5447,7 @@ async def _acontinue_run_stream(
                 # Check for cancellation before model call
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 9. Create session summary
+                # 10. Create session summary
                 if agent.session_summary_manager is not None and agent.enable_session_summaries:
                     # Upsert the RunOutput to Agent Session before creating the session summary
                     agent_session.upsert_run(run=run_response)
@@ -5491,7 +5491,7 @@ async def _acontinue_run_stream(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 10. Cleanup and store the run response and session
+                # 11. Cleanup and store the run response and session
                 await acleanup_and_store(
                     agent, run_response=run_response, session=agent_session, run_context=run_context, user_id=user_id
                 )
