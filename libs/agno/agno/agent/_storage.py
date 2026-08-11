@@ -1123,22 +1123,6 @@ def from_dict(
         log_debug("'num_past_session_runs' has been deprecated. Use 'num_past_session_runs_in_search' instead.")
         config.pop("num_past_session_runs", None)
 
-    if "reasoning" in config:
-        log_debug("'reasoning' has been deprecated. Use ReasoningTools instead.")
-        config.pop("reasoning", None)
-
-    if "reasoning_model" in config:
-        log_debug("'reasoning_model' has been deprecated. Use ReasoningTools instead.")
-        config.pop("reasoning_model", None)
-
-    if "reasoning_min_steps" in config:
-        log_debug("'reasoning_min_steps' has been deprecated.")
-        config.pop("reasoning_min_steps", None)
-
-    if "reasoning_max_steps" in config:
-        log_debug("'reasoning_max_steps' has been deprecated.")
-        config.pop("reasoning_max_steps", None)
-
     return cls(
         # --- Agent settings ---
         model=config.get("model"),

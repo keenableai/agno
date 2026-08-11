@@ -692,9 +692,8 @@ def _resolved_tools_factory(tools: Any) -> Any:
 
 def _mcp_tool_instances(agent: Any, _seen: Optional[Set[int]] = None) -> List[Any]:
     """The MCP tool OBJECTS an agent carries -- same traversal as _mcp_tool_names
-    (callable factories resolved fail-closed, one level of composition, nested
-    reasoning agent), returning the instances so two factory products can be
-    compared by identity."""
+    (callable factories resolved fail-closed, one level of composition), returning
+    the instances so two factory products can be compared by identity."""
     seen = _seen if _seen is not None else set()
     if id(agent) in seen:
         return []

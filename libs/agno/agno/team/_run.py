@@ -1044,13 +1044,13 @@ def _run(
     3. Prepare run messages
     4. Start memory creation in background thread
     5. Get a response from the model
-    7. Update TeamRunOutput with the model response
-    8. Store media if enabled
-    9. Convert response to structured format
-    10. Execute post-hooks
-    11. Wait for background memory creation
-    12. Create session summary
-    13. Cleanup and store (scrub, stop timer, add to session, calculate metrics, save session)
+    6. Update TeamRunOutput with the model response
+    7. Store media if enabled
+    8. Convert response to structured format
+    9. Execute post-hooks
+    10. Wait for background memory creation
+    11. Create session summary
+    12. Cleanup and store (scrub, stop timer, add to session, calculate metrics, save session)
     """
     from agno.team._hooks import _execute_post_hooks, _execute_pre_hooks
     from agno.team._init import _disconnect_connectable_tools
@@ -1215,7 +1215,7 @@ def _run(
                     team, model_response, run_messages, run_context=run_context, run_response=run_response
                 )
 
-                # 7. Update TeamRunOutput with the model response
+                # 6. Update TeamRunOutput with the model response
                 _update_run_response(
                     team,
                     model_response=model_response,
@@ -1224,7 +1224,7 @@ def _run(
                     run_context=run_context,
                 )
 
-                # 7b. Check if delegation propagated member HITL requirements
+                # 6b. Check if delegation propagated member HITL requirements
                 if run_response.requirements and any(not req.is_resolved() for req in run_response.requirements):
                     from agno.team import _hooks
 
@@ -1232,13 +1232,13 @@ def _run(
                         team, run_response=run_response, session=session, run_context=run_context
                     )
 
-                # 8. Always add media to run_response for caller availability
+                # 7. Always add media to run_response for caller availability
                 store_media_util(run_response, model_response)
 
-                # 9. Convert response to structured format
+                # 8. Convert response to structured format
                 _convert_response_to_structured_format(team, run_response=run_response, run_context=run_context)
 
-                # 10. Execute post-hooks after output is generated but before response is returned
+                # 9. Execute post-hooks after output is generated but before response is returned
                 if team.post_hooks is not None:
                     iterator = _execute_post_hooks(
                         team,
@@ -1254,7 +1254,7 @@ def _run(
                     deque(iterator, maxlen=0)
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 11. Wait for background memory creation
+                # 10. Wait for background memory creation
                 wait_for_open_threads(memory_future=memory_future, learning_future=learning_future)  # type: ignore
                 merge_background_metrics(
                     run_response.metrics, collect_background_metrics(memory_future, learning_future)
@@ -1262,7 +1262,7 @@ def _run(
 
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 12. Create session summary
+                # 11. Create session summary
                 if team.session_summary_manager is not None:
                     # Upsert the RunOutput to Team Session before creating the session summary
                     session.upsert_run(run_response=run_response)
@@ -1283,7 +1283,7 @@ def _run(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 13. Cleanup and store the run response
+                # 12. Cleanup and store the run response
                 _cleanup_and_store(team, run_response=run_response, session=session)
 
                 # Log Team Telemetry
@@ -1397,10 +1397,10 @@ def _run_stream(
     3. Prepare run messages
     4. Start memory creation in background thread
     5. Get a response from the model
-    7. Parse response with parser model if provided
-    8. Wait for background memory creation
-    9. Create session summary
-    10. Cleanup and store (scrub, add to session, calculate metrics, save session)
+    6. Parse response with parser model if provided
+    7. Wait for background memory creation
+    8. Create session summary
+    9. Cleanup and store (scrub, add to session, calculate metrics, save session)
     """
     from agno.team._hooks import _execute_post_hooks, _execute_pre_hooks
     from agno.team._init import _disconnect_connectable_tools
@@ -1603,7 +1603,7 @@ def _run_stream(
                 # Check for cancellation after model processing
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 6b. Check if delegation propagated member HITL requirements
+                # 5b. Check if delegation propagated member HITL requirements
                 if run_response.requirements and any(not req.is_resolved() for req in run_response.requirements):
                     from agno.team import _hooks
 
@@ -1614,7 +1614,7 @@ def _run_stream(
                         yield run_response
                     return
 
-                # 7. Parse response with parser model if provided
+                # 6. Parse response with parser model if provided
                 yield from parse_response_with_parser_model_stream(
                     team,
                     session=session,
@@ -1647,7 +1647,7 @@ def _run_stream(
                     )
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 8. Wait for background memory creation
+                # 7. Wait for background memory creation
                 yield from wait_for_thread_tasks_stream(
                     run_response=run_response,
                     memory_future=memory_future,  # type: ignore
@@ -1662,7 +1662,7 @@ def _run_stream(
                 )
 
                 raise_if_cancelled(run_response.run_id)  # type: ignore
-                # 9. Create session summary
+                # 8. Create session summary
                 if team.session_summary_manager is not None:
                     # Upsert the RunOutput to Team Session before creating the session summary
                     session.upsert_run(run_response=run_response)
@@ -1709,7 +1709,7 @@ def _run_stream(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 10. Cleanup and store the run response
+                # 9. Cleanup and store the run response
                 _cleanup_and_store(team, run_response=run_response, session=session)
 
                 if stream_events:
@@ -2921,15 +2921,14 @@ async def _arun(
     2. Determine tools for model
     3. Prepare run messages
     4. Start memory creation in background task
-    5. Reason about the task if reasoning is enabled
-    6. Get a response from the Model
-    7. Update TeamRunOutput with the model response
-    8. Store media if enabled
-    9. Convert response to structured format
-    10. Execute post-hooks
-    11. Wait for background memory creation
-    12. Create session summary
-    13. Cleanup and store (scrub, add to session, calculate metrics, save session)
+    5. Get a response from the Model
+    6. Update TeamRunOutput with the model response
+    7. Store media if enabled
+    8. Convert response to structured format
+    9. Execute post-hooks
+    10. Wait for background memory creation
+    11. Create session summary
+    12. Cleanup and store (scrub, add to session, calculate metrics, save session)
     """
     from agno.team._hooks import _aexecute_post_hooks, _aexecute_pre_hooks
     from agno.team._init import _disconnect_connectable_tools, _disconnect_mcp_tools
@@ -3120,7 +3119,7 @@ async def _arun(
                     run_response=run_response,
                 )
 
-                # 7. Update TeamRunOutput with the model response
+                # 6. Update TeamRunOutput with the model response
                 _update_run_response(
                     team,
                     model_response=model_response,
@@ -3129,7 +3128,7 @@ async def _arun(
                     run_context=run_context,
                 )
 
-                # 7b. Check if delegation propagated member HITL requirements
+                # 6b. Check if delegation propagated member HITL requirements
                 if run_response.requirements and any(not req.is_resolved() for req in run_response.requirements):
                     from agno.team import _hooks
 
@@ -3137,13 +3136,13 @@ async def _arun(
                         team, run_response=run_response, session=team_session, run_context=run_context
                     )
 
-                # 8. Always add media to run_response for caller availability
+                # 7. Always add media to run_response for caller availability
                 store_media_util(run_response, model_response)
 
-                # 9. Convert response to structured format
+                # 8. Convert response to structured format
                 _convert_response_to_structured_format(team, run_response=run_response, run_context=run_context)
 
-                # 10. Execute post-hooks after output is generated but before response is returned
+                # 9. Execute post-hooks after output is generated but before response is returned
                 if team.post_hooks is not None:
                     async for _ in _aexecute_post_hooks(
                         team,
@@ -3160,12 +3159,12 @@ async def _arun(
 
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 11. Wait for background memory creation
+                # 10. Wait for background memory creation
                 await await_for_open_threads(memory_task=memory_task, learning_task=learning_task)
                 merge_background_metrics(run_response.metrics, collect_background_metrics(memory_task, learning_task))
 
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
-                # 12. Create session summary
+                # 11. Create session summary
                 if team.session_summary_manager is not None:
                     # Upsert the RunOutput to Team Session before creating the session summary
                     team_session.upsert_run(run_response=run_response)
@@ -3185,7 +3184,7 @@ async def _arun(
 
                 run_response.status = RunStatus.completed
 
-                # 13. Cleanup and store the run response and session
+                # 12. Cleanup and store the run response and session
                 await _acleanup_and_store(team, run_response=run_response, session=team_session)
 
                 # Log Team Telemetry
@@ -3622,10 +3621,10 @@ async def _arun_stream(
     3. Prepare run messages
     4. Start memory creation in background task
     5. Get a response from the model
-    7. Parse response with parser model if provided
-    8. Wait for background memory creation
-    9. Create session summary
-    10. Cleanup and store (scrub, add to session, calculate metrics, save session)
+    6. Parse response with parser model if provided
+    7. Wait for background memory creation
+    8. Create session summary
+    9. Cleanup and store (scrub, add to session, calculate metrics, save session)
     """
     from agno.team._hooks import _aexecute_post_hooks, _aexecute_pre_hooks
     from agno.team._init import _disconnect_connectable_tools, _disconnect_mcp_tools
@@ -3857,7 +3856,7 @@ async def _arun_stream(
                         yield run_response
                     return
 
-                # 7. Parse response with parser model if provided
+                # 6. Parse response with parser model if provided
                 async for event in aparse_response_with_parser_model_stream(
                     team,
                     session=team_session,
@@ -3893,7 +3892,7 @@ async def _arun_stream(
                         yield event
 
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
-                # 8. Wait for background memory creation
+                # 7. Wait for background memory creation
                 async for event in await_for_thread_tasks_stream(
                     run_response=run_response,
                     memory_task=memory_task,
@@ -3908,7 +3907,7 @@ async def _arun_stream(
 
                 await araise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 9. Create session summary
+                # 8. Create session summary
                 if team.session_summary_manager is not None:
                     # Upsert the RunOutput to Team Session before creating the session summary
                     team_session.upsert_run(run_response=run_response)
@@ -3957,7 +3956,7 @@ async def _arun_stream(
                 # Set the run status to completed
                 run_response.status = RunStatus.completed
 
-                # 10. Cleanup and store the run response and session
+                # 9. Cleanup and store the run response and session
                 await _acleanup_and_store(team, run_response=run_response, session=team_session)
 
                 if stream_events:
