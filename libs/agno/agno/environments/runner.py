@@ -487,7 +487,6 @@ def _attempt_cost(attempt: AttemptResult) -> Optional[float]:
 _ISOLATE_FIELD_ACTIONS: Dict[str, str] = {
     "db": "fresh-inmemory-db",
     "model": "cache-off-copy",
-    "reasoning_model": "cache-off-copy",
     "parser_model": "cache-off-copy",
     "output_model": "cache-off-copy",
     "followup_model": "cache-off-copy",
@@ -499,7 +498,6 @@ _ISOLATE_FIELD_ACTIONS: Dict[str, str] = {
     "culture_manager": "read-only-rebind",  # culture is global knowledge: reads survive
     "compression_manager": "isolated-copy",
     "fallback_config": "cache-off-copies",
-    "reasoning_agent": "recursive-isolate",
     "save_response_to_file": "nulled",
 }
 
@@ -714,16 +712,11 @@ def _mcp_tool_instances(agent: Any, _seen: Optional[Set[int]] = None) -> List[An
                 inner = getattr(tool, attr, None)
                 if isinstance(inner, (list, tuple)):
                     found.extend(sub for sub in inner if _is_mcp_tool(sub))
-    reasoning_agent = getattr(agent, "reasoning_agent", None)
-    if reasoning_agent is not None:
-        found.extend(_mcp_tool_instances(reasoning_agent, _seen=seen))
     return found
 
 
 def _mcp_tool_names(agent: Any, _seen: Optional[Set[int]] = None, *, callable_only: bool = False) -> List[str]:
-    """MCP tool class names on this agent or any nested agent the isolation walk
-    reaches: deep_copy shares a reasoning agent's tools by reference exactly like
-    top-level ones, so a nested MCPTools corrupts attempts the same way.
+    """MCP tool class names on this agent.
 
     A callable tools-factory is resolved here before inspection: production resolves it
     per attempt into run_context (not agent.tools), so connect_mcp_tools never connects
@@ -755,16 +748,12 @@ def _mcp_tool_names(agent: Any, _seen: Optional[Set[int]] = None, *, callable_on
                 inner = getattr(tool, attr, None)
                 if isinstance(inner, (list, tuple)):
                     names.extend(type(sub).__name__ for sub in inner if _is_mcp_tool(sub))
-    reasoning_agent = getattr(agent, "reasoning_agent", None)
-    if reasoning_agent is not None:
-        names.extend(_mcp_tool_names(reasoning_agent, _seen=seen, callable_only=callable_only))
     return names
 
 
 def _isolate_attempt(agent: Any, model_override: Optional[Model] = None, _seen: Optional[Set[int]] = None) -> None:
     """Attempt isolation by INPUT swap, applied per attempt to a factory product
-    or a deep copy -- and recursively to a user-supplied reasoning agent, whose
-    own deep_copy re-shares its db and model.
+    or a deep copy.
 
     The override swaps the attempt's inputs, lets production's own resolver
     (Agent.initialize_agent) run UNCHANGED against them, and only then severs
@@ -928,10 +917,6 @@ def _isolate_attempt(agent: Any, model_override: Optional[Model] = None, _seen: 
     agent.enable_agentic_culture = False  # the culture write tool and its prompt block
     agent.enable_session_summaries = False  # the post-run summary write, an extra LLM call
     agent.save_response_to_file = None  # K attempts would race-write the caller's file
-
-    reasoning_agent = getattr(agent, "reasoning_agent", None)
-    if reasoning_agent is not None:
-        _isolate_attempt(reasoning_agent, _seen=seen)
 
 
 def _default_model_for(agent: Any) -> Optional[Model]:

@@ -2431,7 +2431,7 @@ class StudioTools(Toolkit):
                 return [], f"Step '{step_name}' must specify agent_id, team_id, or function_name"
         return steps, None
 
-    # Reference keys a lenient load drops when they cannot resolve (the three
+    # Reference keys a lenient load drops when they cannot resolve (the two
     # model keys are serialized but not yet consumed by from_dict); an edit
     # that did not replace them must not persist the loss.
     _LENIENT_DROPPABLE_KEYS = (
@@ -2439,7 +2439,6 @@ class StudioTools(Toolkit):
         "input_schema",
         "output_schema",
         "knowledge",
-        "reasoning_model",
         "parser_model",
         "output_model",
     )
@@ -2826,7 +2825,7 @@ def _component_type(component: Component) -> Any:
 # drops them. An edit that resaves a rebuild would therefore delete a
 # declaration it never touched -- and quietly lift the dispatch refusal that
 # declaration causes -- so edits carry them forward verbatim.
-_UNRECONSTRUCTED_KEYS = ("reasoning_model", "parser_model", "output_model")
+_UNRECONSTRUCTED_KEYS = ("parser_model", "output_model")
 
 
 def _component_to_dict(component: Component, carry: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

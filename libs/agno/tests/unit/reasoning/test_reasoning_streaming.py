@@ -8,7 +8,6 @@ from agno.models.message import Message
 from agno.reasoning.step import ReasoningStep, ReasoningSteps
 from agno.run.agent import RunEvent
 
-
 # ============================================================================
 # Test RunEvent enum has required events
 # ============================================================================

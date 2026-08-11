@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 from agno.metrics import MessageMetrics
 from agno.models.message import Message
@@ -69,36 +69,3 @@ def add_reasoning_metrics_to_metadata(
         from agno.utils.log import log_error
 
         log_error(f"Failed to add reasoning metrics to metadata: {str(e)}")
-
-
-def update_run_output_with_reasoning(
-    run_response: Union["RunOutput", "TeamRunOutput"],
-    reasoning_steps: List[ReasoningStep],
-    reasoning_agent_messages: List[Message],
-) -> None:
-    # Update reasoning_steps
-    if run_response.reasoning_steps is None:
-        run_response.reasoning_steps = reasoning_steps
-    else:
-        run_response.reasoning_steps.extend(reasoning_steps)
-
-    # Update reasoning_messages
-    if run_response.reasoning_messages is None:
-        run_response.reasoning_messages = reasoning_agent_messages
-    else:
-        run_response.reasoning_messages.extend(reasoning_agent_messages)
-
-    # Create and store reasoning_content
-    reasoning_content = ""
-    for step in reasoning_steps:
-        if step.title:
-            reasoning_content += f"## {step.title}\n"
-        if step.reasoning:
-            reasoning_content += f"{step.reasoning}\n"
-        if step.action:
-            reasoning_content += f"Action: {step.action}\n"
-        if step.result:
-            reasoning_content += f"Result: {step.result}\n"
-        reasoning_content += "\n"
-
-    run_response.reasoning_content = reasoning_content

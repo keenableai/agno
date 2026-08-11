@@ -1515,7 +1515,7 @@ class StudioRunnerTools(Toolkit):
         capability: the alternative is a successful answer computed some other
         way, which is the failure this toolkit exists to prevent. Reads and
         edits still load the component, so it stays inspectable."""
-        declared = [field for field in ("reasoning_model", "parser_model", "output_model") if config.get(field)]
+        declared = [field for field in ("parser_model", "output_model") if config.get(field)]
         if not declared:
             return
         raise ComponentNotDispatchableError(

@@ -366,13 +366,13 @@ def _run(
     6. Prepare run messages
     7. Start memory creation in background thread
     8. Generate a response from the Model (includes running function calls)
-    10. Update the RunOutput with the model response
-    11. Store media if enabled
-    12. Convert the response to the structured format if needed
-    13. Execute post-hooks
-    14. Wait for background memory creation and cultural knowledge creation
-    15. Create session summary
-    16. Cleanup and store the run response and session
+    9. Update the RunOutput with the model response
+    10. Store media if enabled
+    11. Convert the response to the structured format if needed
+    12. Execute post-hooks
+    13. Wait for background memory creation and cultural knowledge creation
+    14. Create session summary
+    15. Cleanup and store the run response and session
     """
     from agno.agent._hooks import execute_post_hooks, execute_pre_hooks
     from agno.agent._init import disconnect_connectable_tools
@@ -522,7 +522,7 @@ def _run(
 
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 5. Generate a response from the Model (includes running function calls)
+                # 8. Generate a response from the Model (includes running function calls)
                 agent.model = cast(Model, agent.model)
 
                 model_response: ModelResponse = call_model_with_fallback(
@@ -556,7 +556,7 @@ def _run(
                     agent, model_response, run_messages, run_context=run_context, run_response=run_response
                 )
 
-                # 7. Update the RunOutput with the model response
+                # 9. Update the RunOutput with the model response
                 update_run_response(
                     agent,
                     model_response=model_response,
@@ -773,12 +773,11 @@ def _run_stream(
     5. Determine tools for model
     6. Prepare run messages
     7. Start memory creation in background thread
-    8. Reason about the task if reasoning is enabled
-    9. Process model response
-    10. Parse response with parser model if provided
-    11. Wait for background memory creation and cultural knowledge creation
-    12. Create session summary
-    13. Cleanup and store the run response and session
+    8. Process model response
+    9. Parse response with parser model if provided
+    10. Wait for background memory creation and cultural knowledge creation
+    11. Create session summary
+    12. Cleanup and store the run response and session
     """
     from agno.agent._hooks import execute_post_hooks, execute_pre_hooks
     from agno.agent._init import disconnect_connectable_tools
@@ -935,7 +934,7 @@ def _run_stream(
                         store_events=agent.store_events,
                     )
 
-                # 5. Process model response
+                # 8. Process model response
                 if agent.output_model is None:
                     for event in handle_model_response_stream(
                         agent,
@@ -994,7 +993,7 @@ def _run_stream(
                 # Check for cancellation after model processing
                 raise_if_cancelled(run_response.run_id)  # type: ignore
 
-                # 7. Parse response with parser model if provided
+                # 9. Parse response with parser model if provided
                 for event in parse_response_with_parser_model_stream(
                     agent,  # type: ignore
                     session=agent_session,
@@ -1480,13 +1479,13 @@ async def _arun(
     6. Prepare run messages
     7. Start memory creation in background task
     8. Generate a response from the Model (includes running function calls)
-    10. Update the RunOutput with the model response
-    11. Convert response to structured format
-    12. Store media if enabled
-    13. Execute post-hooks
-    14. Wait for background memory creation
-    15. Create session summary
-    16. Cleanup and store (scrub, stop timer, save to file, add to session, calculate metrics, save session)
+    9. Update the RunOutput with the model response
+    10. Convert response to structured format
+    11. Store media if enabled
+    12. Execute post-hooks
+    13. Wait for background memory creation
+    14. Create session summary
+    15. Cleanup and store (scrub, stop timer, save to file, add to session, calculate metrics, save session)
     """
     from agno.agent._hooks import aexecute_post_hooks, aexecute_pre_hooks
     from agno.agent._init import disconnect_connectable_tools, disconnect_mcp_tools
@@ -1680,7 +1679,7 @@ async def _arun(
                     run_response=run_response,
                 )
 
-                # 10. Update the RunOutput with the model response
+                # 9. Update the RunOutput with the model response
                 update_run_response(
                     agent,
                     model_response=model_response,
@@ -2232,10 +2231,10 @@ async def _arun_stream(
     6. Prepare run messages
     7. Start memory creation in background task
     8. Generate a response from the Model (includes running function calls)
-    10. Parse response with parser model if provided
-    11. Wait for background memory creation
-    12. Create session summary
-    13. Cleanup and store (scrub, stop timer, save to file, add to session, calculate metrics, save session)
+    9. Parse response with parser model if provided
+    10. Wait for background memory creation
+    11. Create session summary
+    12. Cleanup and store (scrub, stop timer, save to file, add to session, calculate metrics, save session)
     """
     from agno.agent._hooks import aexecute_post_hooks, aexecute_pre_hooks
     from agno.agent._init import disconnect_connectable_tools, disconnect_mcp_tools
