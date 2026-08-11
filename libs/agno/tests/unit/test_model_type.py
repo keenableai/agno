@@ -33,7 +33,6 @@ class TestModelTypeEnum:
         assert ModelType.OUTPUT_MODEL.value == "output_model"
         assert ModelType.PARSER_MODEL.value == "parser_model"
         assert ModelType.MEMORY_MODEL.value == "memory_model"
-        assert ModelType.REASONING_MODEL.value == "reasoning_model"
         assert ModelType.SESSION_SUMMARY_MODEL.value == "session_summary_model"
         assert ModelType.CULTURE_MODEL.value == "culture_model"
         assert ModelType.LEARNING_MODEL.value == "learning_model"
@@ -43,7 +42,7 @@ class TestModelTypeEnum:
         """ModelType(str, Enum) should compare equal to its string value."""
         assert ModelType.MODEL == "model"
         assert ModelType.OUTPUT_MODEL == "output_model"
-        assert ModelType.REASONING_MODEL == "reasoning_model"
+        assert ModelType.MEMORY_MODEL == "memory_model"
 
     def test_enum_members_are_unique(self):
         values = [m.value for m in ModelType]

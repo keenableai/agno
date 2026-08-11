@@ -1890,7 +1890,6 @@ class TestEditIdentityStability:
             config={
                 "id": "aux-agent",
                 "name": "A",
-                "reasoning_model": aux,
                 "parser_model": aux,
                 "output_model": aux,
                 "parser_model_prompt": "parse",
@@ -1903,7 +1902,6 @@ class TestEditIdentityStability:
         assert out.get("status") == "edited"
 
         config = db.get_config(component_id="aux-agent")["config"]
-        assert config["reasoning_model"] == aux
         assert config["parser_model"] == aux
         assert config["output_model"] == aux
 

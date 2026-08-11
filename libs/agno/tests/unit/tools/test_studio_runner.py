@@ -2090,7 +2090,7 @@ class TestDispatchCheckInvariants:
         from agno.workflow.workflow import Workflow
 
         model = OpenAIResponses(id="gpt-5.4")
-        rich = Agent(id="shared-agent", name="A", model=model, reasoning_model=OpenAIResponses(id="gpt-5.5"))
+        rich = Agent(id="shared-agent", name="A", model=model, parser_model=OpenAIResponses(id="gpt-5.5"))
         plain = Agent(id="shared-agent", name="A", model=model)
         Workflow(
             id="branch-workflow",
@@ -2107,7 +2107,7 @@ class TestDispatchCheckInvariants:
 
         runner = StudioRunnerTools(registry=registry, db=db)
         error = _loads(runner.run_workflow("branch-workflow", "hi")).get("error", "")
-        assert "reasoning_model" in error
+        assert "parser_model" in error
         assert "shared-agent" in error
 
     def test_branch_pins_catch_a_redirected_db_before_any_write(self, db, registry, tmp_path):
@@ -2172,91 +2172,6 @@ class TestDispatchCheckInvariants:
         # With nothing admitted and no database there is genuinely nothing to
         # report, and saying so beats an empty list.
         assert "error" in _loads(StudioRunnerTools(registry=Registry(name="R")).list_agents())
-
-    def test_an_edit_does_not_delete_what_the_rebuild_could_not_restore(self, db, registry):
-        """An edit works on a rebuilt component, so anything from_dict cannot
-        restore is already gone by the time the edit runs. Resaving would
-        delete a declaration the edit never mentioned -- and quietly lift the
-        refusal that declaration causes."""
-        from agno.agent import Agent
-
-        Agent(
-            id="rich",
-            name="Rich",
-            model=OpenAIResponses(id="gpt-5.4"),
-            reasoning_model=OpenAIResponses(id="o3-deep"),
-        ).save(db=db)
-
-        runner = StudioRunnerTools(registry=registry, db=db)
-        assert "reasoning_model" in _loads(runner.run_agent("rich", "hi"))["error"]
-
-        studio = StudioTools(registry=registry, db=db)
-        assert "error" not in _loads(studio.edit_agent("rich", description="an unrelated change"))
-
-        stored = db.get_config(component_id="rich") or {}
-        assert (stored.get("config") or {}).get("reasoning_model") is not None
-        assert "reasoning_model" in _loads(runner.run_agent("rich", "hi"))["error"]
-
-    def test_an_edit_refuses_rather_than_guessing_when_it_cannot_read_the_original(self, db, registry):
-        """A read that fails is not evidence there was nothing to carry. Taking
-        it as an empty set publishes an edit that deletes the declaration and
-        lifts the refusal it causes, so the failure has to reach the caller."""
-        from agno.agent import Agent
-
-        Agent(
-            id="rich",
-            name="Rich",
-            model=OpenAIResponses(id="gpt-5.4"),
-            reasoning_model=OpenAIResponses(id="o3-deep"),
-        ).save(db=db)
-
-        studio = StudioTools(registry=registry, db=db)
-        original = studio._runner_tools._load_config_row_from_db
-        calls = {"count": 0}
-
-        def failing(component_id, **kwargs):
-            calls["count"] += 1
-            if calls["count"] > 1 and component_id == "rich":
-                raise RuntimeError("transient db failure")
-            return original(component_id, **kwargs)
-
-        studio._runner_tools._load_config_row_from_db = failing  # type: ignore[method-assign]
-        result = _loads(studio.edit_agent("rich", description="an unrelated change"))
-        studio._runner_tools._load_config_row_from_db = original  # type: ignore[method-assign]
-
-        assert "error" in result
-        stored = (db.get_config(component_id="rich") or {}).get("config") or {}
-        assert stored.get("reasoning_model") is not None
-
-    def test_a_teams_reasoning_model_survives_being_saved(self, db, registry):
-        """It was dropped at save time, so the loader had nothing to notice and
-        the team dispatched without the reasoning it was configured for -- the
-        exact different-pipeline outcome the refusal exists to prevent. Nothing
-        reads it back yet (#9452), but losing it before anything can is a
-        separate loss."""
-        from agno.agent import Agent
-        from agno.team import Team
-
-        Team(
-            id="crew",
-            name="Crew",
-            model=OpenAIResponses(id="gpt-5.4"),
-            members=[Agent(id="m", name="M", model=OpenAIResponses(id="gpt-5.4"))],
-            reasoning_model=OpenAIResponses(id="o3-deep"),
-        ).save(db=db)
-
-        stored = (db.get_config(component_id="crew") or {}).get("config") or {}
-        assert stored.get("reasoning_model") is not None
-        assert "reasoning_model" in _loads(StudioRunnerTools(registry=registry, db=db).run_team("crew", "hi"))["error"]
-
-        # A team that declares none is untouched.
-        Team(
-            id="plain",
-            name="Plain",
-            model=OpenAIResponses(id="gpt-5.4"),
-            members=[Agent(id="m2", name="M2", model=OpenAIResponses(id="gpt-5.4"))],
-        ).save(db=db)
-        assert StudioRunnerTools(registry=registry, db=db)._team_for_run("plain") is not None
 
     def test_a_name_cannot_reach_a_component_its_id_shadows(self, db, registry):
         """An exact id resolves to the code component and the listing shows
@@ -2339,7 +2254,7 @@ class TestDispatchCheckInvariants:
         rather than only to the component the caller named."""
         model_config = {"name": "OpenAIResponses", "id": "gpt-5.4", "provider": "OpenAI"}
         for component_id, component_type, extra in (
-            ("member", "agent", {"reasoning_model": {"id": "o3-deep", "provider": "OpenAI"}}),
+            ("member", "agent", {"parser_model": {"id": "gpt-5.5", "provider": "OpenAI"}}),
             ("crew", "team", {"members": [{"type": "agent", "agent_id": "member"}]}),
         ):
             config = {"id": component_id, "name": component_id, "model": model_config}
@@ -2348,7 +2263,7 @@ class TestDispatchCheckInvariants:
             db.upsert_config(component_id=component_id, config=config, stage="published")
 
         error = _loads(StudioRunnerTools(registry=registry, db=db).run_team("crew", "hi"))["error"]
-        assert "reasoning_model" in error and "member" in error
+        assert "parser_model" in error and "member" in error
 
     def test_a_declared_model_that_cannot_be_rebuilt_is_refused(self, db, registry):
         """A reasoning, parser or output model is serialized and never read back
@@ -2363,11 +2278,11 @@ class TestDispatchCheckInvariants:
             id="rich",
             name="Rich",
             model=OpenAIResponses(id="gpt-5.4"),
-            reasoning_model=OpenAIResponses(id="o3-deep"),
+            parser_model=OpenAIResponses(id="gpt-5.5"),
         ).save(db=db)
 
         runner = StudioRunnerTools(registry=registry, db=db)
-        assert "reasoning_model" in _loads(runner.run_agent("rich", "hi"))["error"]
+        assert "parser_model" in _loads(runner.run_agent("rich", "hi"))["error"]
 
         # Reads and edits still load it, so the declaration stays repairable.
         assert runner._find_agent("rich") is not None

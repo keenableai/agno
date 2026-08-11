@@ -14,7 +14,6 @@ class ModelType(str, Enum):
     OUTPUT_MODEL = "output_model"
     PARSER_MODEL = "parser_model"
     MEMORY_MODEL = "memory_model"
-    REASONING_MODEL = "reasoning_model"
     SESSION_SUMMARY_MODEL = "session_summary_model"
     CULTURE_MODEL = "culture_model"
     LEARNING_MODEL = "learning_model"

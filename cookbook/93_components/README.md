@@ -327,8 +327,7 @@ Details:
 
 - The walk covers nested teams and every workflow step type (including
   `Condition` else-branches and `Router` choices).
-- Models include `reasoning_model`, `parser_model`, `output_model`, and fallback
-  models. Vector databases and contents databases are pulled from knowledge.
+- Models include `parser_model`, `output_model`, and fallback models. Vector databases and contents databases are pulled from knowledge.
 - Deduplication is by id/name, so a model shared across many agents is collected
   once, and components you pass to a `Registry` explicitly are preserved (the
   discovered ones are merged in, never duplicated).

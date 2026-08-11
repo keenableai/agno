@@ -81,7 +81,6 @@ class StubRolloutAgent:
         learning=None,
         culture_manager=None,
         memory_manager=None,
-        reasoning_model=None,
         parser_model=None,
         output_model=None,
     ):
@@ -97,7 +96,6 @@ class StubRolloutAgent:
         self.learning = learning
         self.culture_manager = culture_manager
         self.memory_manager = memory_manager
-        self.reasoning_model = reasoning_model
         self.parser_model = parser_model
         self.output_model = output_model
         self.user_id = None
@@ -131,7 +129,6 @@ class StubRolloutAgent:
                 "learning": self.learning,
                 "culture_manager": self.culture_manager,
                 "memory_manager": self.memory_manager,
-                "reasoning_model": self.reasoning_model,
                 "parser_model": self.parser_model,
                 "output_model": self.output_model,
                 "user_id": self.user_id,
@@ -306,7 +303,6 @@ async def test_hermetic_live_agent_full_override_set():
         learning=object(),
         culture_manager=culture_manager,
         memory_manager=memory_manager,
-        reasoning_model=StubModel(cache_response=True, id="reasoning"),
         parser_model=StubModel(cache_response=True, id="parser"),
         output_model=StubModel(cache_response=True, id="output"),
     )
@@ -331,7 +327,7 @@ async def test_hermetic_live_agent_full_override_set():
         assert snapshot["update_cultural_knowledge"] is False
         assert snapshot["enable_agentic_culture"] is False
         assert snapshot["model_cache"] is False
-        for secondary_name in ("reasoning_model", "parser_model", "output_model"):
+        for secondary_name in ("parser_model", "output_model"):
             secondary = snapshot[secondary_name]
             assert secondary.cache_response is False
             assert secondary is not getattr(live, secondary_name)
@@ -340,7 +336,6 @@ async def test_hermetic_live_agent_full_override_set():
     assert live.culture_manager is culture_manager
     assert live.memory_manager is memory_manager
     assert live.model.cache_response is True
-    assert live.reasoning_model.cache_response is True
     assert live.update_cultural_knowledge is True
 
 
@@ -980,7 +975,7 @@ def test_diff_names_unmatched_tasks():
 # Hermetic overrides on a REAL Agent (deep_copy path, end-to-end)
 #
 # The stub tests above mirror the override rules; these run the real Agent code so
-# a field the stubs do not model (session summaries, compression, reasoning_agent,
+# a field the stubs do not model (session summaries, compression,
 # save_response_to_file, followup/fallback models) cannot pass vacuously.
 # ---------------------------------------------------------------------------
 
@@ -1118,15 +1113,11 @@ async def test_hermetic_real_agent_full_override_set(tmp_path):
     calls = []
     main_model = RecordingFakeModel("main", calls=calls)
     main_model.cache_response = True
-    reasoning_model = RecordingFakeModel("reasoning")
-    reasoning_model.cache_response = True
     followup_model = RecordingFakeModel("followup")
     followup_model.cache_response = True
     fallback_model = RecordingFakeModel("fallback")
     fallback_model.cache_response = True
-    sub_model = RecordingFakeModel("sub")
     caller_db = InMemoryDb()
-    reasoning_db = InMemoryDb()
     summary_manager = SessionSummaryManager()
     compression_manager = CompressionManager()
     culture_manager = CultureManager(db=InMemoryDb())
@@ -1135,14 +1126,12 @@ async def test_hermetic_real_agent_full_override_set(tmp_path):
     caller = Agent(
         model=main_model,
         db=caller_db,
-        reasoning_model=reasoning_model,
         followup_model=followup_model,
         fallback_models=[fallback_model],
         session_summary_manager=summary_manager,
         compression_manager=compression_manager,
         culture_manager=culture_manager,
         skills=skills,
-        reasoning_agent=Agent(model=sub_model, db=reasoning_db, telemetry=False),
         save_response_to_file=str(save_path),
         telemetry=False,
     )
@@ -1156,8 +1145,6 @@ async def test_hermetic_real_agent_full_override_set(tmp_path):
     for attempt_agent in attempt_agents:
         assert isinstance(attempt_agent.db, InMemoryDb) and attempt_agent.db is not caller_db
         assert attempt_agent.model is not main_model and attempt_agent.model.cache_response is False
-        assert attempt_agent.reasoning_model is not reasoning_model
-        assert attempt_agent.reasoning_model.cache_response is False
         assert attempt_agent.followup_model is not followup_model
         assert attempt_agent.followup_model.cache_response is False
         assert attempt_agent.fallback_config is not caller.fallback_config
@@ -1182,11 +1169,6 @@ async def test_hermetic_real_agent_full_override_set(tmp_path):
         assert attempt_agent.compression_manager.stats is not compression_manager.stats
         assert attempt_agent.culture_manager is not culture_manager
         assert attempt_agent.culture_manager.db is culture_manager.db
-        assert attempt_agent.reasoning_agent is not caller.reasoning_agent
-        assert isinstance(attempt_agent.reasoning_agent.db, InMemoryDb)
-        assert attempt_agent.reasoning_agent.db is not reasoning_db
-        assert attempt_agent.reasoning_agent.model is not sub_model
-        assert attempt_agent.reasoning_agent.model.cache_response is False
         assert attempt_agent.save_response_to_file is None
         assert attempt_agent.skills is skills  # read-only definitions stay shared
     # The caller is untouched, in objects and in side effects.
@@ -1199,7 +1181,7 @@ async def test_hermetic_real_agent_full_override_set(tmp_path):
     assert not save_path.exists()
     # Exactly one provider call per attempt on the main model, none anywhere
     # else: no summary or memory call rode along. (Reasoning is not enabled on
-    # this caller, so the reasoning slots are exercised as bindings only.)
+    # this caller.)
     assert [call[0] for call in calls] == ["fake-main", "fake-main"]
 
 
@@ -1503,38 +1485,6 @@ async def test_opaque_learning_store_in_standard_slot_dropped():
     assert isolated.user_profile is False
 
 
-async def test_live_agent_with_nested_mcp_tools_rejected_at_run_start():
-    # deep_copy shares a reasoning agent's tools by reference exactly like
-    # top-level ones: the guard must see MCPTools anywhere the hermetic walk goes.
-    caller = Agent(
-        model=RecordingFakeModel("mcp-outer"),
-        reasoning_agent=Agent(model=RecordingFakeModel("mcp-inner"), tools=[MCPTools()], telemetry=False),
-        telemetry=False,
-    )
-    with pytest.raises(RuntimeError, match="factory"):
-        await arun_rollouts(_real_env(caller), k=1)
-
-
-async def test_factory_env_with_nested_mcp_tools_not_rejected():
-    recorder = Recorder()
-
-    def factory():
-        stub = StubRolloutAgent(recorder)
-        nested = StubRolloutAgent(recorder)
-        nested.tools = [MCPTools()]
-        stub.reasoning_agent = nested
-        return stub
-
-    env = Environment(
-        name="mcp-nested-factory",
-        tasks=(Task(input="one"),),
-        scorer=CodeScorer(lambda r, e: True),
-        agent=factory,
-    )
-    result = await arun_rollouts(env, k=1, concurrency=1)
-    assert result.n_attempts == 1
-
-
 async def test_positional_task_id_collision_rejected_at_run_start():
     # An explicit "t2" colliding with the second task's auto-id only exists after
     # resolution; diff() keyed on the duplicate would pair rows with the wrong task.
@@ -1802,7 +1752,7 @@ async def _drain_background_tasks():
 
 async def test_write_isolation_deep_freeze(tmp_path):
     # k=3 concurrent attempts on a maxed-out caller -- every manager, seeded db,
-    # learning machine over a shared store, reasoning agent, fallback models,
+    # learning machine over a shared store, fallback models,
     # warm caches, save file. Snapshot the caller's reachable graph before and
     # after; zero caller-side mutations, no save file, no cache replay.
     from agno.compression.manager import CompressionManager
@@ -1816,12 +1766,8 @@ async def test_write_isolation_deep_freeze(tmp_path):
     calls = []
     main_model = RecordingFakeModel("main", calls=calls)
     main_model.cache_response = True
-    reasoning_model = RecordingFakeModel("reasoning", calls=calls)
-    reasoning_model.cache_response = True
     fallback_model = RecordingFakeModel("fallback", calls=calls)
     fallback_model.cache_response = True
-    sub_model = RecordingFakeModel("sub", calls=calls)
-    sub_model.cache_response = True
 
     world_db = InMemoryDb()
     culture_db = InMemoryDb()
@@ -1834,7 +1780,6 @@ async def test_write_isolation_deep_freeze(tmp_path):
     caller = Agent(
         model=main_model,
         db=world_db,
-        reasoning_model=reasoning_model,
         fallback_models=[fallback_model],
         memory_manager=MemoryManager(),
         session_summary_manager=SessionSummaryManager(),
@@ -1849,7 +1794,6 @@ async def test_write_isolation_deep_freeze(tmp_path):
         update_knowledge=True,
         update_cultural_knowledge=True,
         enable_agentic_culture=True,
-        reasoning_agent=Agent(model=sub_model, db=InMemoryDb(), telemetry=False),
         save_response_to_file=str(save_path),
         skills=StubSkills(),
         telemetry=False,
