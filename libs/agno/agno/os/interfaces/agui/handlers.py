@@ -226,33 +226,6 @@ def on_reasoning_started(chunk: BaseRunOutputEvent, state: StreamState) -> List[
     return events
 
 
-def on_reasoning_content_delta(chunk: BaseRunOutputEvent, state: StreamState) -> List[BaseEvent]:
-    events: List[BaseEvent] = []
-
-    # Close open text message before reasoning
-    if state.text_message_open:
-        events.append(TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=state.text_message_id))
-        state.close_text_message()
-
-    reasoning_id, is_new = state.ensure_reasoning_started()
-    if is_new:
-        events.append(ReasoningStartEvent(type=EventType.REASONING_START, message_id=reasoning_id))
-        events.append(
-            ReasoningMessageStartEvent(
-                type=EventType.REASONING_MESSAGE_START, message_id=reasoning_id, role="reasoning"
-            )
-        )
-
-    content = getattr(chunk, "reasoning_content", None)
-    if content:
-        events.append(
-            ReasoningMessageContentEvent(
-                type=EventType.REASONING_MESSAGE_CONTENT, message_id=reasoning_id, delta=content
-            )
-        )
-    return events
-
-
 def on_reasoning_step(chunk: BaseRunOutputEvent, state: StreamState) -> List[BaseEvent]:
     events: List[BaseEvent] = []
 
@@ -421,7 +394,6 @@ HANDLERS: Dict[str, EventHandler] = {
     RunEvent.tool_call_started.value: on_tool_call_started,
     RunEvent.tool_call_completed.value: on_tool_call_completed,
     RunEvent.reasoning_started.value: on_reasoning_started,
-    RunEvent.reasoning_content_delta.value: on_reasoning_content_delta,
     RunEvent.reasoning_step.value: on_reasoning_step,
     RunEvent.reasoning_completed.value: on_reasoning_completed,
     RunEvent.custom_event.value: on_custom_event,

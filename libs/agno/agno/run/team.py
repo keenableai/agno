@@ -150,7 +150,6 @@ class TeamRunEvent(str, Enum):
 
     reasoning_started = "TeamReasoningStarted"
     reasoning_step = "TeamReasoningStep"
-    reasoning_content_delta = "TeamReasoningContentDelta"
     reasoning_completed = "TeamReasoningCompleted"
 
     memory_update_started = "TeamMemoryUpdateStarted"
@@ -410,14 +409,6 @@ class ReasoningStepEvent(BaseTeamRunEvent):
 
 
 @dataclass
-class ReasoningContentDeltaEvent(BaseTeamRunEvent):
-    """Event for streaming reasoning content chunks as they arrive."""
-
-    event: str = TeamRunEvent.reasoning_content_delta.value
-    reasoning_content: str = ""  # The delta/chunk of reasoning content
-
-
-@dataclass
 class ReasoningCompletedEvent(BaseTeamRunEvent):
     event: str = TeamRunEvent.reasoning_completed.value
     content: Optional[Any] = None
@@ -653,7 +644,6 @@ TeamRunOutputEvent = Union[
     PostHookCompletedEvent,
     ReasoningStartedEvent,
     ReasoningStepEvent,
-    ReasoningContentDeltaEvent,
     ReasoningCompletedEvent,
     MemoryUpdateStartedEvent,
     MemoryUpdateCompletedEvent,
@@ -697,7 +687,6 @@ TEAM_RUN_EVENT_TYPE_REGISTRY = {
     TeamRunEvent.post_hook_completed.value: PostHookCompletedEvent,
     TeamRunEvent.reasoning_started.value: ReasoningStartedEvent,
     TeamRunEvent.reasoning_step.value: ReasoningStepEvent,
-    TeamRunEvent.reasoning_content_delta.value: ReasoningContentDeltaEvent,
     TeamRunEvent.reasoning_completed.value: ReasoningCompletedEvent,
     TeamRunEvent.memory_update_started.value: MemoryUpdateStartedEvent,
     TeamRunEvent.memory_update_completed.value: MemoryUpdateCompletedEvent,

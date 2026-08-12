@@ -5,7 +5,6 @@ from agno.os.interfaces.agui.stream import async_stream_agno_response_as_agui_ev
 from agno.reasoning.step import ReasoningStep
 from agno.run.agent import (
     ReasoningCompletedEvent,
-    ReasoningContentDeltaEvent,
     ReasoningStartedEvent,
     ReasoningStepEvent,
     RunCompletedEvent,
@@ -59,35 +58,6 @@ async def test_reasoning_started_closes_open_text_message():
     assert EventType.TEXT_MESSAGE_START in event_types
     assert EventType.TEXT_MESSAGE_END in event_types
 
-    _check_no_reasoning_inside_text_message(event_types)
-
-
-@pytest.mark.asyncio
-async def test_reasoning_content_delta_closes_open_text_message():
-    async def mock_stream():
-        text1 = RunContentEvent()
-        text1.content = "Processing..."
-        yield text1
-
-        delta = ReasoningContentDeltaEvent()
-        delta.reasoning_content = "Thinking about the problem..."
-        yield delta
-
-        yield ReasoningCompletedEvent()
-
-        text2 = RunContentEvent()
-        text2.content = "Done."
-        yield text2
-
-        yield RunCompletedEvent()
-
-    events = []
-    async for event in async_stream_agno_response_as_agui_events(mock_stream(), "thread_1", "run_1"):
-        events.append(event)
-
-    event_types = [e.type for e in events]
-
-    assert EventType.REASONING_START in event_types
     _check_no_reasoning_inside_text_message(event_types)
 
 
