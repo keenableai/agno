@@ -167,15 +167,6 @@
 
 ---
 
-### reasoning_agent_events.py
-
-**Status:** PASS
-**Tier:** untagged
-**Description:** Demonstrates reasoning agent events. Ran successfully and produced expected output.
-**Result:** Completed successfully in 83s.
-
----
-
 ### retries.py
 
 **Status:** PASS

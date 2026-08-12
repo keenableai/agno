@@ -21,7 +21,6 @@ Advanced examples covering caching, compression, concurrency, events, retries, d
 - `custom_logging.py` - Custom logging configuration.
 - `debug.py` - Enable debug mode for verbose output.
 - `metrics.py` - Access agent run metrics.
-- `reasoning_agent_events.py` - Events during reasoning steps.
 - `retries.py` - Retry configuration with exponential backoff.
 - `tool_call_compression.py` - Compress tool call results in context.
 
